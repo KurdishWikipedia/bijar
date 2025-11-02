@@ -26,9 +26,8 @@ htmlcov/
 
 
 # --- Environment Variables ---
-# Ignore all .env files, but not .env.sample
-.env*
-!/.env.sample
+# Ignore the local environment .env, but not .env.sample
+.env
 
 
 # --- IDE & Editor Config ---
