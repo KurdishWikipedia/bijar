@@ -1,0 +1,46 @@
+# --- Cloud Sync / Temp Files ---
+.tmp.driveupload/
+.tmp.drivedownload/
+
+# --- Python ---
+# Byte-compiled files and cache
+__pycache__/
+*.pyc
+
+# Virtual Environment
+venv/
+
+
+# --- Build & Distribution ---
+# Standard Python packaging artifacts
+build/
+dist/
+*.egg-info/
+
+
+# --- Testing ---
+# Artifacts from testing tools like pytest and coverage.py
+.pytest_cache/
+.coverage
+htmlcov/
+
+
+# --- Environment Variables ---
+# Ignore all .env files, but not .env.sample
+.env*
+!/.env.sample
+
+
+# --- IDE & Editor Config ---
+.vscode/
+.idea/
+
+
+# --- Generated Project Files ---
+# Output from scripts and logs
+*.log
+
+
+# --- OS-specific ---
+.DS_Store
+Thumbs.db

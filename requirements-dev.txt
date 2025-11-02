@@ -1,0 +1,12 @@
+# ==============================================================================
+# requirements-dev.txt - Development Dependencies
+# ==============================================================================
+# Use this file for setting up your local development environment.
+# To install, run: pip install -r requirements-dev.txt
+# ------------------------------------------------------------------------------
+
+# First, install all the production requirements
+-r requirements.txt
+
+# -- Development-Specific Packages --
+flask-cors              # Handles Cross-Origin Resource Sharing for local API testing

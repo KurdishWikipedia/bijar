@@ -1,0 +1,56 @@
+{% extends "layout.html" %}
+
+{% block title %}بژار{% endblock %}
+
+{% block content %}
+<div class="center-container">
+
+    <!-- User Responsibility Disclaimer -->
+    <div class="alert alert-info text-center" style="font-size: 1.1em;">
+        <i class="fa fa-info-circle"></i>
+        بەرپرسیارێتیی بەکارھێنانی ئەم ئامڕازە بە تەواوی لە ئەستۆی بەکارھێنەرە.
+    </div>
+
+    <div class="page-card text-center">
+        <h1>بە خێر بێن بۆ ئامڕازی پشکنەری ڕێنووسی کوردیی بژار</h1>
+        <p class="lead">ئەم ئامڕازە یارمەتیی بەکارھێنەرانی ویکیپیدیای کوردی دەدات بۆ دۆزینەوە و ڕاستکردنەوەی ھەڵەی ڕێنووسی لە وتارەکاندا.</p>
+    </div>
+
+    <!-- Live Stats Block -->
+    <div class="stats-container">
+        <h2>توانستی فەرھەنگەکە لە ئێستادا</h2>
+        <div class="stats-grid">
+            <div class="stat-card">
+                <span id="stems-count-display" class="stat-number">...</span>
+                <p class="stat-label">ڕەگی ناوەکان</p>
+            </div>
+            <div class="stat-card">
+                <span id="derived-count-display" class="stat-number">...</span>
+                <p class="stat-label">ناوەکان بە پاشگرەوە</p>
+            </div>
+            <div class="stat-card">
+                <span id="verbs-count-display" class="stat-number">...</span>
+                <p class="stat-label">کارە سادەکان بە دۆخی ڕابردوو و ڕانەبردوو و ئەرێوە</p>
+            </div>
+            <div class="stat-card">
+                <span id="particles-count-display" class="stat-number">...</span>
+                <p class="stat-label">وردە ئامڕازەکانی تر وەک جێناوەکان</p>
+            </div>
+            <div class="stat-card total">
+                <span id="total-count-display" class="stat-number">...</span>
+                <p class="stat-label">کۆی گشتی</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="page-card text-center info-links">
+        <p>بۆ بەکارھێنانی ئامڕازەکە، دەبێ یان <a href="https://w.wiki/5yvK" target="_blank">بەڕێوەبەر</a> یانیش ئەندامی <a href="//w.wiki/FtrS" target="_blank">پاسدەرانی خۆگەڕ</a> بیت. تکایە سەرەتا <a href="https://w.wiki/Ftry" target="_blank">ڕێنمایییەکان لە ویکیپیدیا بخوێنەوە</a> و، پاشان دەتوانیت ئامڕازەکە چالاک بکەیت.
+        <p>دەتوانن سەیری پێڕستی <a href="{{ url_for('api.requested_words') }}">وشە داواکراوەکان</a> بکەن.</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Load the specific JavaScript for the index page stats -->
+<script src="{{ url_for('static', filename='js/stats.js') }}"></script>
+{% endblock %}

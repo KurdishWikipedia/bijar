@@ -1,0 +1,17 @@
+# ==============================================================================
+# requirements.txt - Production Dependencies
+# ==============================================================================
+# These are the essential packages required to run the application on Toolforge.
+# To install, run: pip install -r requirements.txt
+# ------------------------------------------------------------------------------
+
+# -- Web Framework & Configuration --
+flask
+python-dotenv           # Reads environment variables from the .env file
+
+# -- Database --
+PyMySQL                 # Pure-Python MySQL driver for database connections
+
+# -- Core Logic & Performance --
+Levenshtein             # Fast C implementation for string distance calculation
+psutil                  # Used for monitoring system memory usage on startup

@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="ckb" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}بژار{% endblock %}</title>
+
+    <!-- Dependencies from Toolforge Static -->
+    <link rel="stylesheet" href="https://tools-static.wmflabs.org/cdnjs/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://tools-static.wmflabs.org/cdnjs/ajax/libs/bootstrap-rtl/3.4.0/css/bootstrap-rtl.min.css">
+    <link rel="stylesheet" href="https://tools-static.wmflabs.org/cdnjs/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+
+    <!-- FOUC (Flash of Unstyled Content) Blocker -->
+    <script>
+        (function() {
+            var theme = localStorage.getItem('theme') || 'light';
+            document.documentElement.className = 'theme-' + theme;
+        })();
+    </script>
+    
+    <!-- Placeholder for page-specific styles or scripts -->
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <div class="content-wrapper">
+        <nav class="navbar navbar-default navbar-static-top">
+            <div class="container">
+                <div class="navbar-header">
+                    <!-- Mobile: Theme Toggle (Left) + Hamburger (Far Left) -->
+                    <button id="theme-toggle-mobile" class="btn btn-default navbar-btn visible-xs-block">
+                        <i class="fa"></i>
+                    </button>
+                    <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar-collapse" aria-expanded="false">
+                        <span class="sr-only">Toggle navigation</span>
+                        <span class="icon-bar"></span><span class="icon-bar"></span><span class="icon-bar"></span>
+                    </button>
+                    <!-- Mobile: Brand (Right) -->
+                    <a class="navbar-brand visible-xs-block" href="{{ url_for('api.index') }}">
+                        بژار
+                    </a>
+                </div>
+                <div class="collapse navbar-collapse" id="navbar-collapse">
+                    <!-- Desktop: Links + Brand -->
+                    <ul class="nav navbar-nav navbar-right">
+                        <li class="hidden-xs"><a class="navbar-brand" href="{{ url_for('api.index') }}">بژار </a></li>
+                        
+                        <!-- Loop through the navigation links defined in the context_processor -->
+                        {% for link in nav_links %}
+                        <li {% if request.endpoint == link.endpoint %} class="active" {% endif %}>
+                            <a href="{{ url_for(link.endpoint) }}">{{ link.text }}</a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    <!-- Desktop: Theme Toggle (Far Left) -->
+                    <ul class="nav navbar-nav navbar-left hidden-xs">
+                        <li>
+                            <button id="theme-toggle-desktop" class="btn btn-default navbar-btn">
+                                <i class="fa"></i>
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+
+        <main class="container">
+            <!-- Experimental Tool Warning -->
+            <div id="experimental-banner" class="alert alert-warning alert-dismissible text-center" role="alert">
+                <button type="button" class="close" data-dismiss="alert" aria-label="داخستن" title="بۆ ماوەی حەفتەیەک ئەم ئاگادارییە بشارەوە"><span aria-hidden="true">&times;</span></button>
+                <strong><i class="fa fa-flask"></i>تاقیکاری:</strong> ئەم ئامڕازە لەژێر تاقیکردنەوە و قۆناغی پەرەپێدانی بەردەوامدایە بۆیە تکایە پێش پاشەکەوتکردن، بە وردی چاو بە گۆڕانکارییەکاندا بخشێنەوە.
+            </div>
+
+            {% block content %}{% endblock %}
+        </main>
+
+    </div>
+
+    <footer class="main-footer text-center">
+        <div class="container">
+            <p class="made-with-love">
+                بە <i class="fa fa-heart" style="color: #c0392b;"></i> لەلایەن Aram دروست کراوە · لەسەر تووڵفۆڕج ڕاژە کراوە · © ٢٠٢٥ · وەشانی <span id="app-version">{{ app_version }}</span>
+            </p>
+            <div class="footer-bottom-row">
+
+                <div class="footer-social-links">
+                    <a href="https://github.com/KurdishWikipedia/bijar" title="Source Code on GitHub" target="_blank"><i class="fa fa-github fa-lg"></i></a>
+                    <a href="https//github.com/KurdishWikipedia/bijar/issues" title="Report an issue" target="_blank"><i class="fa fa-bug fa-lg"></i></a>
+                    <a href="https://w.wiki/Ftry" title="Documentation on ckb Wikipedia" target="_blank"><i class="fa fa-book fa-lg"></i></a>
+                </div>
+
+                <div class="footer-powered-by">
+                     <img src="https://tools-static.wmflabs.org/toolforge/banners/Powered-by-Toolforge.png" alt="Powered by Wikimedia Toolforge">
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JS Files -->
+    <script src="https://tools-static.wmflabs.org/cdnjs/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script src="https://tools-static.wmflabs.org/cdnjs/ajax/libs/twitter-bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const toggleButtons = [
+                document.getElementById('theme-toggle-desktop'),
+                document.getElementById('theme-toggle-mobile')
+            ];
+            const docElement = document.documentElement;
+
+            function applyTheme(theme) {
+                docElement.className = 'theme-' + theme;
+                const isLight = theme === 'light';
+                toggleButtons.forEach(btn => {
+                    if (btn) {
+                        const icon = btn.querySelector('.fa');
+                        icon.className = isLight ? 'fa fa-moon-o' : 'fa fa-sun-o';
+                    }
+                });
+                localStorage.setItem('theme', theme);
+            }
+
+            toggleButtons.forEach(btn => {
+                if (btn) {
+                    btn.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        let newTheme = docElement.classList.contains('theme-light') ? 'dark' : 'light';
+                        applyTheme(newTheme);
+                    });
+                }
+            });
+
+            // Set initial icon state on load
+            const currentTheme = localStorage.getItem('theme') || 'light';
+            applyTheme(currentTheme);
+        });
+    </script>
+    <script>
+        // --- Persistent Banner Dismissal Logic ---
+        document.addEventListener('DOMContentLoaded', function() {
+            const banner = document.getElementById('experimental-banner');
+            if (!banner) return;
+
+            const DISMISS_KEY = 'experimentalBannerDismissed';
+            // Set the expiration time: 7 days in milliseconds
+            const EXPIRATION_TIME = 7 * 24 * 60 * 60 * 1000; 
+
+            // Check on page load
+            const dismissedTimestamp = localStorage.getItem(DISMISS_KEY);
+            if (dismissedTimestamp) {
+                const timeSinceDismissed = new Date().getTime() - dismissedTimestamp;
+                if (timeSinceDismissed < EXPIRATION_TIME) {
+                    banner.style.display = 'none';
+                }
+            }
+
+            // Listen for the close event from Bootstrap
+            $('#experimental-banner').on('closed.bs.alert', function () {
+                // Save the current time to localStorage when the banner is closed.
+                localStorage.setItem(DISMISS_KEY, new Date().getTime());
+            });
+        });
+    </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const versionElement = document.getElementById('app-version');
+            if (versionElement) {
+                const indoArabicFormatter = new Intl.NumberFormat('ar-IQ');
+                versionElement.textContent = versionElement.textContent.split('.').map(p => indoArabicFormatter.format(p)).join('٫');
+            }
+        });
+    </script>
+    {% block extra_js %}
+        <!-- This block is only for page-specific scripts like main.js and stats.js -->
+    {% endblock %}
+</body>
+</html>
