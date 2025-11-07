@@ -11,7 +11,6 @@ from . import spellchecker_logic as logic
 from . import database_manager
 from . import __version__
 from .database import get_db_connection
-from .data_loader import calculate_and_cache_word_counts
 
 # --- SERVER-SIDE VALIDATION CONSTANTS ---
 MAX_SUGGESTION_LIMIT = 10
@@ -56,14 +55,9 @@ def check_text_block():
 # --- Add a new endpoint to provide the live word count ---
 @api_blueprint.route('/api/get_word_counts', methods=['GET'])
 def get_word_counts():
-    """Provides word counts from a cache. Calculates on first call."""
-    # This check correctly handles cases where the key exists but is None.
-    if logic.linguistic_data.get('word_counts') is None:
-        calculate_and_cache_word_counts(logic.linguistic_data)
- 
-    # Return the cached data.
-    return jsonify(logic.linguistic_data['word_counts'])
-
+    """Provides pre-calculated word counts directly from the cache."""
+    # The data is guaranteed to be loaded by app.py at startup.
+    return jsonify(logic.linguistic_data.get('word_counts', {}))
 
 @api_blueprint.route('/api/get_suggestions', methods=['GET'])
 def get_suggestions():

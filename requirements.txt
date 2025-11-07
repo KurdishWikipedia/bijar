@@ -1,5 +1,5 @@
 # ==============================================================================
-# requirements.txt - Production Dependencies
+# requirements.txt - Development and Production Dependencies
 # ==============================================================================
 # These are the essential packages required to run the application on Toolforge.
 # To install, run: pip install -r requirements.txt
@@ -7,6 +7,7 @@
 
 # -- Web Framework & Configuration --
 flask
+flask-cors              # Enables cross-origin requests between a browser and a Flask backend on different domains.
 python-dotenv           # Reads environment variables from the .env file
 
 # -- Database --

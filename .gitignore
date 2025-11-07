@@ -8,8 +8,11 @@ __pycache__/
 *.pyc
 
 # Virtual Environment
-venv/
+www/python/venv/
 
+# --- Data Files ---
+# "data" only has "word_counts.json" file and should be generated using "generate_stats.py" script
+data/
 
 # --- Build & Distribution ---
 # Standard Python packaging artifacts

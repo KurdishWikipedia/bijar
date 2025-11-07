@@ -6,8 +6,10 @@ and loads the necessary data into memory before starting the server.
 """
 
 import os
+import json
 import psutil
 from flask import Flask
+from flask_cors import CORS
 
 # --- IMPORTS FROM OUR MODULES ---
 from spellchecker import spellchecker_logic as logic
@@ -18,11 +20,9 @@ from spellchecker.routes import api_blueprint
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY") # Read from .env
 
-# Conditionally enable CORS for development only
-if os.getenv("FLASK_ENV") == "development":
-    from flask_cors import CORS
-    CORS(app)
-    print("✅ CORS enabled for local development.")
+# --- CORS CONFIGURATION ---
+# Enable CORS for all API routes to allow cross-origin requests.
+CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 # Register all the API endpoints from our routes file
 app.register_blueprint(api_blueprint)
@@ -32,6 +32,19 @@ app.register_blueprint(api_blueprint)
 # Load all data into the in-memory cache at startup for high performance.
 with get_db_connection() as conn:
     logic.load_all_data_into_memory(conn)
+
+# --- Load the pre-calculated data using a robust, absolute path ---
+# This ensures the file is found regardless of where the app is started from.
+try:
+    # Get the absolute path to the directory containing this app.py file
+    app_root = os.path.dirname(os.path.abspath(__file__))
+    json_path = os.path.join(app_root, 'static', 'data', 'word_counts.json')
+    with open(json_path, "r", encoding="utf-8") as f:
+        logic.linguistic_data['word_counts'] = json.load(f)
+except FileNotFoundError:
+    # Provide a clear, universal instruction for all users.
+    print("WARNING: word_counts.json not found. Run 'python run.py generate_stats' (or 'python3' on Linux/Toolforge).")
+    logic.linguistic_data['word_counts'] = {}
 
 # --- MEASURE AND PRINT MEMORY USAGE TO MONITER ---
 process = psutil.Process(os.getpid())
