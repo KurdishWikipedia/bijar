@@ -113,40 +113,31 @@ class SuggestionFinder:
                                     
     def _find_structural_verb_suggestions(self):
         """Hypothesis C: The word is a compressed compound verb or needs a rule-based fix."""
+        # Fix common dialectal variant 'ئە' -> 'دە' (e.g., "ئەگرم" -> "دەگرم")
         if self.word.startswith('ئە'):
             fix = self.word.replace('ئە', 'دە', 1)
             if fix in self.single_word_verb_forms:
                 self.candidates[fix] = max(self.candidates.get(fix, 0.0), 1.01)
 
+        def _fix_compressed_verb(pattern: str, correction: str, score: float):
+            """Checks for a compressed verb pattern and adds a valid correction to candidates."""
+            if self.word.startswith(pattern) and len(self.word) > len(pattern):
+                rest_of_word = self.word[len(pattern):]
+                fix = correction.format(rest=rest_of_word)
+                if fix in self.multi_word_phrases:
+                    self.candidates[fix] = max(self.candidates.get(fix, 0.0), score)
+
         for prefix in self.all_prefixes:
             for g1p in GROUP_1_PRONOUNS:
-                base, ish_base = prefix + g1p, prefix + "یش" + g1p
-                e_base, ish_e_base = base + 'ئە', ish_base + 'ئە'
-
-                # Pattern 1: e.g., "ھەڵمگرت" -> "ھەڵم گرت"
-                if self.word.startswith(base) and len(self.word) > len(base):
-                    fix = f"{base} {self.word[len(base):]}"
-                    if fix in self.multi_word_phrases:
-                        self.candidates[fix] = max(self.candidates.get(fix, 0.0), 1.02)
+                # Base forms for the prefix-pronoun combination.
+                prefix_pronoun = prefix + g1p
+                prefix_pronoun_ish = prefix + "یش" + g1p
                 
-                # Pattern 2: e.g., "ھەڵیشمگرت" -> "ھەڵیشم گرت"
-                if self.word.startswith(ish_base) and len(self.word) > len(ish_base):
-                    fix = f"{ish_base} {self.word[len(ish_base):]}"
-                    if fix in self.multi_word_phrases:
-                        self.candidates[fix] = max(self.candidates.get(fix, 0.0), 1.02)
+                _fix_compressed_verb(prefix_pronoun, f"{prefix_pronoun} {{rest}}", 1.02)          # e.g., "ھەڵمگرت" -> "ھەڵم گرت"
+                _fix_compressed_verb(prefix_pronoun_ish, f"{prefix_pronoun_ish} {{rest}}", 1.02)    # e.g., "ھەڵیشمگرت" -> "ھەڵیشم گرت"
+                _fix_compressed_verb(prefix_pronoun + 'ئە', f"{prefix_pronoun} دە{{rest}}", 1.03)        # e.g., "ھەڵمئەگرت" -> "ھەڵم دەگرت"
+                _fix_compressed_verb(prefix_pronoun_ish + 'ئە', f"{prefix_pronoun_ish} دە{{rest}}", 1.03)  # e.g., "ھەڵیشمئەگرت" -> "ھەڵیشم دەگرت"
                 
-                # Pattern 3: e.g., "ھەڵمدەگرت" -> "ھەڵم دەگرت"
-                if self.word.startswith(e_base) and len(self.word) > len(e_base):
-                    fix = f"{base} دە{self.word[len(e_base):]}"
-                    if fix in self.multi_word_phrases:
-                        self.candidates[fix] = max(self.candidates.get(fix, 0.0), 1.03)
-                
-                # Pattern 4: e.g., "ھەڵیشمدەگرت" -> "ھەڵیشم دەگرت"
-                if self.word.startswith(ish_e_base) and len(self.word) > len(ish_e_base):
-                    fix = f"{ish_base} دە{self.word[len(ish_e_base):]}"
-                    if fix in self.multi_word_phrases:
-                        self.candidates[fix] = max(self.candidates.get(fix, 0.0), 1.03)
-
     def _rank_suggestions(self) -> List[str]:
         """Ranks candidates by score and returns the top N results."""
         if not self.candidates:

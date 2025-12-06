@@ -5,7 +5,7 @@ This file contains the Verb class, which is the core engine for generating
 all valid verb forms based on linguistic rules.
 """
 
-from typing import List, Set
+from typing import List, Set, Tuple
 from .constants import GROUP_1_PRONOUNS, GROUP_2_PRONOUNS, GROUP_3_PRONOUNS
 
 # Defines grammatically impossible pronoun pairings (e.g., 'me' with 'we').
@@ -37,8 +37,12 @@ class Verb:
         # This set will collect all single-word forms that a prefix COULD be attached to.
         base_prefixable_forms: Set[str] = {self.past_stem}
         
+        # Get raw present forms and their pronouns.
+        # e.g., self.raw_present_forms_with_pronouns = [('گرم', 'م'), ('گرێت', 'ێت')]
+        self.raw_present_forms_with_pronouns = self._generate_base_present_forms()
+
         # Generate present tense forms (e.g., "دەگرم")
-        present_stems_inflected = {'دە' + f for f in self._generate_present_forms()}
+        present_stems_inflected = {'دە' + form for form, _ in self.raw_present_forms_with_pronouns}
         all_forms.update(present_stems_inflected)
 
         # Generate past tense forms with pronouns (e.g., "گرتم")
@@ -56,22 +60,83 @@ class Verb:
         base_prefixable_forms.add(perfect_base_form)
         all_forms.update(perfect_base_stem + p + 'ە' for p in past_pronouns)
 
-        # For transitive verbs, generate past continuous single-word forms (e.g., "دەگرت", "دەمگرت")
-        if self.is_transitive:
-            base_prefixable_forms.add('دە' + self.past_stem)
-            all_forms.update('دە' + p + self.past_stem for p in GROUP_1_PRONOUNS)
+        # Generate past continuous single-word form (e.g., "دەگرت")
+        base_prefixable_forms.add('دە' + self.past_stem)
 
-        # Add all generated base forms (like "گرت", "دەگرت", "گرتبوو", "گرتووە") to the final list.
-        # This ensures they exist even for verbs without prefixes.
+        # Generate past continuous single-word forms with pronouns.
+        # DO NOT use past_pronouns here, as transitive and intransitive differ.
+        if self.is_transitive:
+            all_forms.update('دە' + p + self.past_stem for p in GROUP_1_PRONOUNS)   # e.g., "دەمگرت"
+        else:
+            all_forms.update('دە' + self.past_stem + p for p in GROUP_2_PRONOUNS)   # e.g., "دەخەوتم"
+
+        # --- IMPERATIVE MOOD GENERATION (e.g., "بگرە", "بمگرن") ---
+        base_imperatives: Set[str] = set()
+        object_imperatives: Set[str] = set()
+
+        # Special Case: "ھاتن" (to come)
+        if self.infinitive == 'ھاتن':
+            all_forms.update({'وەرە', 'وەرن'})
+
+        # Determine 2nd Person Singular Subject (Vowel Harmony)
+        p2_singular = '' if self.present_stem.endswith(('ە', 'ۆ', 'ێ', 'وو', 'ی')) else 'ە'
+
+        # Generate Standard Imperatives
+        # Structure: "ب" + stem + subject
+        if self.infinitive == 'چوون':
+            base_imperatives.add('بچۆ') # Irregular Singular
+            base_imperatives.add('بچن') # Irregular Plural
+        else:
+            base_imperatives.add('ب' + self.present_stem + p2_singular) # Singular (e.g., بگرە, بخۆ)
+            base_imperatives.add('ب' + self.present_stem + 'ن')         # Plural   (e.g., بگرن, بخۆن)
+
+        # Generate Transitive Imperatives with Object Pronouns
+        # Structure: "ب" + object + stem + subject
+        if self.is_transitive:
+            # Plural Subject ('ن') accepts ALL objects.
+            # Singular Subject ('p2_singular') accepts ONLY non-2nd person objects (excludes 'ت', 'تان').
+            
+            for obj in GROUP_1_PRONOUNS:
+                prefix_base = 'ب' + obj + self.present_stem
+                
+                # Plural Subject (Always Valid) -> e.g., بتگرن, بمگرن
+                object_imperatives.add(prefix_base + 'ن')
+
+                # Singular Subject (Restricted) -> e.g., بمگرە (Valid), بتگرە & بتانگرە (Invalid)
+                if obj not in {'ت', 'تان'}:
+                    object_imperatives.add(prefix_base + p2_singular)
+
+        base_prefixable_forms.update(base_imperatives)
+        all_forms.update(object_imperatives)
+
+        # --- SUBJUNCTIVE MOOD GENERATION (e.g., "بخۆم", "بخوات", "بمخوات") ---
+        base_subjunctives: Set[str] = set()
+        object_subjunctives: Set[str] = set()
+
+        for form, subject_pronoun in self.raw_present_forms_with_pronouns:
+            # Simple Subjunctive (e.g., "بخۆم", "بخوات")
+            base_subjunctives.add('ب' + form)
+
+            # Transitive with Objects (e.g., "بمخوات")
+            if self.is_transitive:
+                for obj in GROUP_1_PRONOUNS:
+                    # Filter impossible pairs (e.g., "بمخۆم" -> I eat me).
+                    if (obj, subject_pronoun) not in INVALID_PRONOUN_PAIRS:
+                        object_subjunctives.add('ب' + obj + form)
+
+        base_prefixable_forms.update(base_subjunctives)
+        all_forms.update(object_subjunctives)
+        
+        # Add all generated base forms to the final list.
         all_forms.update(base_prefixable_forms)
 
         # --- Phase 2: Generate all PREFIXED forms in a single, efficient loop ---
 
         for prefix in self.valid_prefixes:
-            # Case A: Single-word prefixed forms (e.g., "ھەڵگرت", "ھەڵدەگرت")
+            # Case A: Single-word prefixed forms (e.g., "ھەڵگرت")
             all_forms.update(prefix + f for f in base_prefixable_forms)
 
-            # Case B: Prefixed infinitives (e.g., "ھەڵگرتن", "ڕێککەوتن")
+            # Case B: Prefixed infinitives (e.g., "ھەڵگرتن")
             all_forms.add(prefix + self.infinitive)
 
             # Case C: Multi-word phrases for transitive verbs
@@ -80,25 +145,32 @@ class Verb:
                     # Create the two prefix styles (with/without 'یش') ONCE.
                     prefix_variations = [f"{prefix}{g1p}", f"{prefix}یش{g1p}"]
 
-                    # Now, loop through those two styles and apply all tense rules cleanly.
+                    # Iterate through all base forms to create full phrases.
                     for prefix_variation in prefix_variations:
-                        # Past Tenses: Here `g1p` is the SUBJECT.
+
+                        # Past Tenses: `g1p` is the SUBJECT.
                         all_forms.add(f"{prefix_variation} {self.past_stem}")       # e.g., "ھەڵم گرت"
                         all_forms.add(f"{prefix_variation} {perfect_base_form}")    # e.g., "ھەڵم گرتووە"
                         all_forms.add(f"{prefix_variation} {past_far_base}")        # e.g., "ھەڵم گرتبوو"
 
-                        # Present Tense: Here, `g1p` is the OBJECT.
-                        for present_form in present_stems_inflected:
-                            # Isolate the subject pronoun ending (e.g., 'دەگرم' -> 'م').
-                            subject_pronoun = present_form.replace('دە' + self.present_stem, '', 1)
-                            
+                        # Imperative Tense: `g1p` is the OBJECT.
+                        # This logic is unique and remains separate.
+                        for imperative_form in base_imperatives:
+                            subject_pronoun = 'ن' if imperative_form.endswith('ن') else 'یت'
                             if (g1p, subject_pronoun) not in INVALID_PRONOUN_PAIRS:
-                                all_forms.add(f"{prefix_variation} {present_form}")     # e.g., "ھەڵم دەگرێت"
-                            # else:
-                            #     if prefix + self.infinitive == 'ھەڵگرتن':
-                            #         print(f"🚫 Excluded Present: {prefix_variation} {present_form}")
+                                all_forms.add(f"{prefix_variation} {imperative_form}") # e.g., "ھەڵی بگرە"
 
-                        # Complex Past Tenses: Here, `g1p` is the SUBJECT and `g2p` is the OBJECT.
+                        # Present & Subjunctive Tenses: `g1p` is the OBJECT.
+                        # The logic is identical for both, so we merge them into a single loop.
+                        for tense_marker in ('دە', 'ب'): # Grammatical markers for Present ('دە') and Subjunctive ('ب')
+                            for form, subject_pronoun in self.raw_present_forms_with_pronouns:
+                                if (g1p, subject_pronoun) not in INVALID_PRONOUN_PAIRS:
+                                    # e.g., 'دە' + 'گرێت' -> 'دەگرێت'
+                                    verb_form = tense_marker + form
+                                    # e.g., "ھەڵم" + " " + "دەگرێت" -> "ھەڵم دەگرێت"
+                                    all_forms.add(f"{prefix_variation} {verb_form}")
+
+                        # Complex Past Tenses: `g1p` is the SUBJECT and `g2p` is the OBJECT.
                         for g2p in GROUP_2_PRONOUNS:
                             if (g1p, g2p) not in INVALID_PRONOUN_PAIRS:
                                 # Simple Past with Subject Pronoun
@@ -107,21 +179,35 @@ class Verb:
                                 all_forms.add(f"{prefix_variation} دە{self.past_stem}{g2p}") # e.g., "ھەڵم دەگرتیت"
                                 # Past Far with Subject Pronoun
                                 all_forms.add(f"{prefix_variation} {past_far_base}{g2p}") # e.g., "ھەڵم گرتبوویت"
-                            # else:
-                            #     if prefix + self.infinitive == 'ھەڵگرتن':
-                            #         print(f"🚫 Excluded Past: {prefix_variation} {self.past_stem}{g2p}")
-                            #         print(f"🚫 Excluded Past: {prefix_variation} دە{self.past_stem}{g2p}")
-                            #         print(f"🚫 Excluded Past: {prefix_variation} {past_far_base}{g2p}")
 
         return all_forms
     
-    def _generate_present_forms(self) -> List[str]:
-        """Helper to generate present tense stems based on vowel harmony."""
+    def _generate_base_present_forms(self) -> List[Tuple[str, str]]:
+        """
+        Helper to generate present tense stems and the pronoun used for each.
+        Returns a list of (form, pronoun) tuples, e.g., [('خۆم', 'م'), ('خوات', 'ات')].
+        """
         stem = self.present_stem
-        # Use the full set of pronouns for present tense
-        forms: List[str] = [stem + p for p in GROUP_3_PRONOUNS if p not in ('ات', 'ێت')]
-        if stem.endswith('ە'): forms.append(stem[:-1] + 'ات')
-        elif stem.endswith('ۆ'): forms.append(stem[:-1] + 'وات')
-        elif stem.endswith('ێ'): forms.append(stem[:-1] + 'ێت')
-        else: forms.append(stem + 'ێت')
+        forms: List[Tuple[str, str]] = []
+        
+        # Generate for all standard pronouns except 3rd person singular
+        for p in GROUP_3_PRONOUNS:
+            if p not in ('ات', 'ێت'):
+                forms.append((stem + p, p))
+
+        # Handle 3rd Person Singular separately due to vowel harmony rules
+        third_person_pronoun = 'ێت'  # Default pronoun
+        modified_stem = stem         # Default stem
+        
+        if stem.endswith('ە'):
+            third_person_pronoun = 'ات'
+            modified_stem = stem[:-1]
+        elif stem.endswith('ۆ'):
+            third_person_pronoun = 'ات'
+            modified_stem = stem[:-1] + 'و' # e.g., 'خۆ' -> 'خو'
+        elif stem.endswith('ێ'):
+            modified_stem = stem[:-1]
+        
+        forms.append((modified_stem + third_person_pronoun, third_person_pronoun))
+
         return forms

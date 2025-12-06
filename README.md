@@ -1,6 +1,6 @@
 # Bijar CKB Spellchecker
 
-[![Wikipedia Project Page](https://img.shields.io/badge/Project%20Page-Wikipedia-blue)](https://ckb.wikipedia.org/wiki/Wikipedia:Bijar)
+[![Wikipedia Project Page](https://img.shields.io/badge/Project%20Page-Wikipedia-blue)](https://ckb.wikipedia.org/wiki/Wikipedia:بژار)
 [![Discussion](https://img.shields.io/badge/Discussion-ckb.wiki%20Talk%20Page-blue)](https://w.wiki/Fy4N)
 [![GitHub contributors](https://img.shields.io/github/contributors/KurdishWikipedia/bijar)](https://github.com/KurdishWikipedia/bijar/graphs/contributors)
 [![GitHub stars](https://img.shields.io/github/stars/KurdishWikipedia/bijar)](https://github.com/KurdishWikipedia/bijar/stargazers)
@@ -25,7 +25,7 @@ The name "Bijar" (بژار) is a Kurdish word for "weeding," reflecting the tool
   <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2d/Screenshot_of_a_new_spellchecker_gadget_for_CKB_Wikipedia_-_community_consultation.png/800px-Screenshot_of_a_new_spellchecker_gadget_for_CKB_Wikipedia_-_community_consultation.png" alt="Screenshot of the Bijar spellchecker gadget in action">
 </p>
 <p align="center">
-  <em>The Bijar gadget integrated with Wikipedia's Wikitext 2010 editor, showing its options and a list of misspelled words with suggestions.</em>
+  <em>The Bijar gadget integrated with Wikipedia's 2010 wikitext editor, showing its options and a list of misspelled words with suggestions.</em>
 </p>
 <p align="center">
   <small>Screenshot by the project author. Licensed under <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> via <a href="https://commons.wikimedia.org/wiki/File:Screenshot_of_a_new_spellchecker_gadget_for_CKB_Wikipedia_-_community_consultation.png">Wikimedia Commons</a>.</small>
@@ -38,15 +38,15 @@ The name "Bijar" (بژار) is a Kurdish word for "weeding," reflecting the tool
 *   **Correction Suggestions:** Provides a list of suggestions for each identified error.
 *   **Community Dictionary:** Allows users to request new words to be added.
 *   **Wikipedia Gadget:** Integrates directly into the ckb.wikipedia.org editing interface for eligible users.
-*   **Public Database:** Data can be queried directly using Wikimedia's [Quarry](https://quarry.wmflabs.org/) and [Superset](https://superset.wmflabs.org/) tools. The database name is `s57137__bijar_p`.
-*   **Public REST API:** Offers a simple endpoint for use in other applications.
+*   **Public Database:** Data can be queried directly using Wikimedia's [Quarry](https://quarry.wmflabs.org/) and [Superset](https://superset.wmflabs.org/) tools (database: `s57137__bijar_p`). See, for example, a query for [all simple verbs with their stems and properties](https://quarry.wmcloud.org/query/99218).
+*   **[Public API](#public-api):** Offers endpoints for integration with other applications.
 
 ## Usage on Wikipedia
 
 This tool is used as a gadget on the Central Kurdish Wikipedia. To learn how to enable and use it, please read the [official documentation on Wikipedia](https://w.wiki/Ftry).
 
 > [!NOTE]
-> The gadget is currently available only in the **[Wikitext 2010 editor](https://www.mediawiki.org/wiki/Extension:WikiEditor)**.
+> The gadget is currently available only in the **[2010 wikitext editor](https://www.mediawiki.org/wiki/Extension:WikiEditor)**.
 
 ## How It Works (Backend + Gadget)
 
@@ -72,7 +72,7 @@ The official gadget has several features and behaviors:
 
 ## Public API
 
-The Bijar webservice provides a public API endpoint for getting spelling suggestions, which **carefully** can be used in other projects or custom user scripts
+The Bijar webservice provides public API endpoints which can be used in other projects or custom user scripts.
 
 ### Get Suggestions
 
@@ -96,6 +96,7 @@ https://bijar.toolforge.org/api/get_suggestions?word=کورشی&limit=10&distanc
 **Example Response:**
 ```json
 {
+  "word": "کورشی",
   "distance_used": 2,
   "limit_used": 10,
   "suggestions": [
@@ -109,10 +110,88 @@ https://bijar.toolforge.org/api/get_suggestions?word=کورشی&limit=10&distanc
     "کورد",
     "کوردەشی",
     "کورتەشی"
-  ],
-  "word": "کورشی"
+  ]
 }
 ```
+
+### Check Text Block
+
+This endpoint analyzes a block of plain text and returns a JSON list of all found issues.
+
+**URL:** `POST https://bijar.toolforge.org/api/check_text_block`
+
+**Request Body:** (`Content-Type: application/json`)
+
+| Parameter | Type   | Description                                     |
+| :-------- | :----- | :---------------------------------------------- |
+| `text`    | string | **Required.** The block of text to be analyzed. |
+
+#### Usage Examples
+
+**JavaScript (fetch)**
+```javascript
+async function checkText(text) {
+  const url = 'https://bijar.toolforge.org/api/check_text_block';
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text })
+  });
+  return response.json();
+}
+
+checkText('چەم بێ چقەڵ نابێت.').then(console.log);
+```
+
+**Python (requests)**
+```python
+import requests
+
+def check_text(text):
+    url = 'https://bijar.toolforge.org/api/check_text_block'
+    response = requests.post(url, json={'text': text})
+    return response.json()
+
+print(check_text('چەم بێ چقەڵ نابێت.'))
+```
+
+**PHP (`file_get_contents`)**
+```php
+function check_text($text) {
+    $url = 'https://bijar.toolforge.org/api/check_text_block';
+    $options = [
+        'http' => [
+            'method'  => 'POST',
+            'header'  => "Content-Type: application/json\r\n" .
+                         "User-Agent: Bijar-API-Client\r\n", // A User-Agent is required by Toolforge.
+            'content' => json_encode(['text' => $text]),
+        ],
+    ];
+    $context  = stream_context_create($options);
+    $response = file_get_contents($url, false, $context);
+    return json_decode($response, true);
+}
+
+print_r(check_text('چەم بێ چقەڵ نابێت.'));
+```
+
+**Example Response:**
+```json
+[
+    {
+        "word": "چقەڵ",
+        "type": "misspelled",
+        "start": 7,
+        "end": 11
+    }
+]
+```
+
+**Notes:**
+*   Each object in the response array represents a single found issue.
+*   `start` and `end` are the character offsets of the word in the original text.
+*   The `type` field indicates the nature of the issue (e.g., `misspelled`, `bad`).
+*   **Wikitext Handling:** The API analyzes plain text. For best results when checking wiki articles, it is recommended to first mask syntax (templates, links, etc.) on the client-side before sending the text. The official [ckbwiki gadget](https://ckb.wikipedia.org/wiki/MediaWiki:Gadget-Bijar.js) is a robust reference for this.
 
 ## Setup
 
@@ -138,6 +217,7 @@ git clone https://github.com/KurdishWikipedia/bijar.git
 ```
 
 **2. Create Virtual Environment & Install Dependencies**
+
 Open a terminal and create a virtual environment inside the `www/python/` directory.
 ```bash
 python -m venv www/python/venv
@@ -167,11 +247,14 @@ deactivate
 
 **4. Configure Environment Variables**
 
+The application requires a local `.env` file for settings and secrets.
+
 Navigate to the application's source directory:
 ```bash
 cd www/python/src
 ```
-Copy the sample environment file:
+
+Create the file by copying the sample for your operating system:
 ```bash
 # On Windows
 copy .env.sample .env
@@ -179,7 +262,8 @@ copy .env.sample .env
 # On macOS & Linux
 cp .env.sample .env
 ```
-Open the new `.env` file and edit the variables to match your local database setup, following the instructions within the file.
+
+Open the new `.env` file in a text editor and follow the instructions inside to add your local configuration.
 
 **5. Generate Word Statistics**
 
@@ -210,18 +294,20 @@ To test changes locally, you can use a browser extension like [Tampermonkey](htt
 
 **7. Run the Application**
 
-From the **root directory** of the project (`bijar/`), use the provided helper scripts, which automatically activate the virtual environment and start the Flask server.
+1.  **Start your database:** Ensure your local database server is running.
 
-*   **On Windows (cmd/PowerShell):**
-    ```bash
-    .\run.bat
-    ```
-*   **On macOS, Linux, or Git Bash:**
-    ```bash
-    ./run.sh
-    ```
+2.  **Run the development server:** From the project's root directory (`bijar/`), execute the appropriate script for your operating system. This will automatically manage the virtual environment and start the Flask server.
 
-The application will be available at `http://127.0.0.1:5000` and `http://localhost:5000`.
+    *   **On Windows (cmd/PowerShell):**
+        ```bash
+        .\run.bat
+        ```
+    *   **On macOS, Linux, or Git Bash:**
+        ```bash
+        ./run.sh
+        ```
+
+The application will now be running at `http://127.0.0.1:5000` and `http://localhost:5000`.
 
 
 </details>
@@ -298,12 +384,16 @@ rm local_database.sql
 ```
 
 **5. Configure Environment Variables**
+
+Create and edit the `.env` file using the provided sample. The file contains all necessary instructions.
+
 ```bash
 cd www/python/src
 cp .env.sample .env
-# Edit .env by following it's instructions.
+# Edit .env using the instructions inside the file.
 ```
-After editing, secure the file:
+
+Finally, secure the file:
 ```bash
 chmod 600 .env
 ```
